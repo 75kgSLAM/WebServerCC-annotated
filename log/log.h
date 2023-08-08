@@ -73,9 +73,9 @@ private:
 // 可变参数宏提供写日志接口，优先级更高的日志会被写入
 #define LOG_BASE(level, format, ...) \
     do { \
-        Log log = Log::instance(); \
+        Log& log = Log::instance(); \
         if (log.isOpen() and log.getLevel() <= level) { \
-            log.format(level, format, ##__VA_ARGS__); \
+            log.write(level, format, ##__VA_ARGS__); \
             log.flush(); \
         } \
     } while(0); // 注意这里的分号
