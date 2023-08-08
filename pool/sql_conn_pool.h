@@ -27,7 +27,10 @@ public:
 private:
     SqlConnPool();
     ~SqlConnPool();
+
+    // 是否需要将这些拷贝复制操作全部删除呢？
     SqlConnPool(const SqlConnPool&) = delete;
+    SqlConnPool(const SqlConnPool&&) = delete;
     SqlConnPool& operator=(const SqlConnPool&) = delete;
 
 private:
