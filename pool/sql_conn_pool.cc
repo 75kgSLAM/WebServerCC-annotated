@@ -3,7 +3,7 @@
 
 #include "assert.h"
 
-SqlConnPool& SqlConnPool::instance(int size) {
+SqlConnPool& SqlConnPool::instance(int size = 12) {
     assert(size > 10);
     static SqlConnPool scp(size);
     return scp;
@@ -76,7 +76,8 @@ int SqlConnPool::getFreeConnCount() {
 }
 
 // private methods
-SqlConnPool::SqlConnPool(int size): _used_conn(0), _free_conn(0), _MAX_CONN(size), _s(_MAX_CONN) {}
+SqlConnPool::SqlConnPool(int size): _used_conn(0), _free_conn(0), 
+                            _MAX_CONN(size), _s(_MAX_CONN) {}
 
 SqlConnPool::~SqlConnPool() {
     close();
