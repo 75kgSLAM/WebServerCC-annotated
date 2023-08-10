@@ -29,11 +29,15 @@ size_t Buffer::getPrependableBytes() const {
 }
 
 const char* Buffer::getReadPos() const {
-    return _beginCharPtr() + _read_pos;
+    return _beginCharPtrConst() + _read_pos;
 }
 
 char* Buffer::getWritePos() {
     return _beginCharPtr() + _write_pos;
+}
+
+const char* Buffer::getWritePosConst() const {
+    return _beginCharPtrConst() + _write_pos;
 }
 
 void Buffer::hasWritten(size_t len) {
@@ -43,6 +47,11 @@ void Buffer::hasWritten(size_t len) {
 void Buffer::retrieve(size_t len) {
     assert(len <= getReadableBytes());
     _read_pos += len;
+}
+
+void Buffer::retrieveUntil(const char* pos) {
+    assert(pos >= getReadPos());
+    retrieve(pos - getReadPos());
 }
 
 void Buffer::retrieveAll() {
@@ -79,7 +88,7 @@ char* Buffer::_beginCharPtr() {
 }
 
 // 重载const版本
-const char* Buffer::_beginCharPtr() const {
+const char* Buffer::_beginCharPtrConst() const {
     // 取vector中第一个字符的地址
     assert(!_buf.empty());
     return &_buf[0];

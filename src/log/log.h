@@ -17,7 +17,7 @@
 #include <mutex>
 
 #include "block_queue.hpp"
-#include "buffer.h"
+#include "buffer/buffer.h"
 
 class Log {
 public:

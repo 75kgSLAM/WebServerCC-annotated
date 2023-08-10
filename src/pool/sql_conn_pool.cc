@@ -1,5 +1,5 @@
 #include "sql_conn_pool.h"
-#include "../log/log.h"
+#include "log/log.h"
 
 #include "assert.h"
 

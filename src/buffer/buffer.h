@@ -32,6 +32,7 @@ public:
 
     const char* getReadPos() const;
     char* getWritePos();
+    const char* getWritePosConst() const;
     void hasWritten(size_t len);
 
     void retrieve(size_t len);
@@ -44,14 +45,11 @@ public:
     void append(const void* data, size_t len);
     void append(const Buffer& buf);
 
-    ssize_t readFd(int fd, int* errno);
-    ssize_t writeFd(int fd, int* errno);
-
     void ensureWritable(size_t len);
-
+    
 private:
     char* _beginCharPtr();
-    const char* _beginCharPtr() const;
+    const char* _beginCharPtrConst() const;
     void _extendSpace(size_t len);
 
     std::vector<char> _buf;

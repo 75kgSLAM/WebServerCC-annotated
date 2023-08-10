@@ -12,7 +12,7 @@
 #ifndef SQL_CONN_POOL_H
 #define SQL_CONN_POOL_H
 
-#include "../RAIIs/semRAII.hpp"
+#include "RAIIs/sem_RAII.hpp"
 
 #include <mysql/mysql.h>
 #include <mutex>
@@ -53,9 +53,9 @@ private:
     ~SqlConnPool();
 
     // 是否需要将这些拷贝复制操作全部删除呢？
-    SqlConnPool(const SqlConnPool&) = delete;
-    SqlConnPool(const SqlConnPool&&) = delete;
-    SqlConnPool& operator=(const SqlConnPool&) = delete;
+    // SqlConnPool(const SqlConnPool&) = delete;
+    // SqlConnPool(const SqlConnPool&&) = delete;
+    // SqlConnPool& operator=(const SqlConnPool&) = delete;
 
 private:
     const int _MAX_CONN;
