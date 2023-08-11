@@ -22,6 +22,7 @@ public:
         assert(conn_pool);
         _conn_pool = conn_pool;
         _mysql = _conn_pool->getConn();
+        assert(_mysql);
     }
 
     ~SqlConnRAII() {
@@ -33,9 +34,15 @@ public:
     MYSQL* operator->() {
         return _mysql;
     }
+
+    MYSQL* operator&() {
+        return _mysql;
+    }
+    
 private:
     MYSQL* _mysql;
+    // why pointer?
     SqlConnPool* _conn_pool;
-} sqlconn;
+} SqlConn;
 
 #endif // SQL_CONN_RAII_HPP

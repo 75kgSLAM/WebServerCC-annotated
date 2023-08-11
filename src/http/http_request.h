@@ -49,11 +49,20 @@ private:
     bool _parseHeaders(const std::string& line);
     bool _parseBody(const std::string& line);
 
-    void _parsePath();
+    bool _parsePath();
+    bool _parsePost();
+    bool _parseEncodedUrl();
+
+    bool _userVerify(const std::string& username, const std::string& password);
+    bool _userRegister(const std::string& username, const std::string& password);
+    
     PARSE_STATE _state;
     std::string _method, _path, _version, _body;
-    std::unordered_map<std::string, std::string> _header;
+    std::unordered_map<std::string, std::string> _headers;
     std::unordered_map<std::string, std::string> _post;
+
+    static const std::unordered_set<std::string> DEFAULT_HTML;
+    static const std::unordered_map<std::string, int> LOGIN_OPTIONS;
 };
 
 #endif // HTTP_REQUEST_H
