@@ -18,7 +18,7 @@ const std::unordered_map<std::string, int> LOGIN_OPTIONS {
 };
 
 HttpRequest::HttpRequest() {
-    init();
+    // init();
 }
 
 void HttpRequest::init() {
@@ -184,7 +184,8 @@ bool HttpRequest::_parseEncodedUrl() {
                 break;
             // 编码为十六进制数，需要解码
             case '%':
-
+                // TODO
+                break;
             case '=':
                 key = _body.substr(start, end - start);
                 start = end + 1;

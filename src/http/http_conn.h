@@ -45,6 +45,8 @@ public:
 
     int getPort() const;
 
+    std::string getHttpVersion() const;
+
 private:
     ssize_t _readToBuf(int fd, int* err_state);
     ssize_t _writeToBuf();
@@ -65,6 +67,8 @@ private:
 
     HttpRequest _request;
     HttpResponse _response;
+
+    std::string _version;
 };
 
 #endif // HTTP_CONN_H

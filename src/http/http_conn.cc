@@ -19,6 +19,7 @@ void HttpConn::init(int socket_fd, const sockaddr_in& addr) {
     _read_buf.retrieveAll();
     _write_buf.retrieveAll();
     _is_closed = false;
+    _version = "1.1";
     LOG_INFO("New client connection [%d](%s:%d), current user count: %d",
                 _fd, getIP(), getPort(), _user_count)
 }
@@ -55,7 +56,14 @@ ssize_t HttpConn::write(int* save_errno) {
 }
 
 bool HttpConn::process() {
-    
+    _request.init();
+    if (_read_buf.getReadableBytes() <= 0) {
+        return false;
+    }
+    if (_request.parse(_read_buf) == true) {
+        LOG_DEBUG("Path: %s", _request.getPath().c_str())
+
+    }
 }
 
 int HttpConn::getFd() const {
@@ -68,6 +76,10 @@ const char* HttpConn::getIP() const {
 
 int HttpConn::getPort() const {
     return _addr.sin_port;
+}
+
+std::string HttpConn::getHttpVersion() const {
+    return _version;
 }
 
 // private methods

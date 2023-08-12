@@ -12,8 +12,41 @@
 #ifndef HTTP_RESPONSE_H
 #define HTTP_RESPONSE_H
 
-class HttpResponse {
+#include "buffer/buffer.h"
 
+#include <string>
+#include <unordered_map>
+
+#include <sys/stat.h>
+
+class HttpResponse {
+public:
+    HttpResponse();
+    ~HttpResponse();
+
+    void init(const std::string& src_dir, const std::string& path, bool keep_alive = false, int code = -1);
+    
+    void makeResponse(Buffer& buf);
+
+private:
+    void _addStateLine(Buffer& buf);
+    void _addHeader(Buffer& buf);
+    void _addContent(Buffer& buf);
+
+    void _errorHtml();
+    std::string _getFileType() const;
+
+    int _code;
+    bool _keep_alive;
+    std::string _path;
+    std::string _src_dir;
+
+    char* _file;
+    struct stat _file_stat;
+
+    static const std::unordered_map<std::string, std::string> FILE_TYPE;
+    static const std::unordered_map<int, std::string> ERROR_CODE;
+    static const std::unordered_map<int, std::string> STATUS_CODE;
 };
 
 #endif // HTTP_RESPONSE_H

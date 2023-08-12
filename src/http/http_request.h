@@ -44,6 +44,8 @@ public:
     void init();
     bool parse(Buffer& buf);
 
+    std::string getPath() const;
+
 private:
     bool _parseRequestLine(const std::string& line);
     bool _parseHeaders(const std::string& line);
