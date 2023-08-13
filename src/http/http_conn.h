@@ -21,7 +21,9 @@
 
 class HttpConn {
     static bool _is_ET;
+    static const char* _src_dir;
     static std::atomic<int> _user_count;
+
 public:
     HttpConn();
 
@@ -38,6 +40,8 @@ public:
     ssize_t write(int* save_errno);
 
     bool process();
+
+    int getBytesToWrite() const;
 
     int getFd() const;
 

@@ -69,6 +69,20 @@ bool HttpRequest::parse(Buffer& buf) {
     return true;
 }
 
+std::string HttpRequest::getPath() const {
+    return _path;
+}
+
+bool HttpRequest::isKeepAlive() const {
+    if (_headers.find("Connection") == _headers.end()) {
+        return false;
+    }
+    if (_headers.at("Connection") == "keep-alive" and _version == "1.1") {
+        return true;
+    }
+    return false;
+}
+
 // private methods
 bool HttpRequest::_parseRequestLine(const std::string& line) {
     std::regex pattern("^([^ ]*) ([^ ]*) HTTP/([^ ]*)$");

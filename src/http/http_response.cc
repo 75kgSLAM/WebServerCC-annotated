@@ -1,6 +1,12 @@
 #include "http_response.h"
+#include "log/log.h"
+
+#include <unordered_map>
 
 #include <sys/stat.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <unistd.h>
 
 const std::unordered_map<std::string, std::string> HttpResponse::FILE_TYPE {
     { ".html",  "text/html" },
@@ -39,13 +45,16 @@ const std::unordered_map<int, std::string> HttpResponse::ERROR_CODE {
 
 HttpResponse::HttpResponse()
     : _code(-1), _keep_alive(false), _path(""),
-    _src_dir(""), _file_stat({0}) {}
+    _src_dir(""), _file(nullptr), _file_stat({0}) {}
 
 HttpResponse::~HttpResponse() {
-
+    _unmapFile();
 }
 
 void HttpResponse::init(const std::string& src_dir, const std::string& path, bool keep_alive, int code) {
+    if (_file != nullptr) {
+        _unmapFile();
+    }
     _src_dir = src_dir;
     _path = path;
     _keep_alive = keep_alive;
@@ -64,6 +73,14 @@ void HttpResponse::makeResponse(Buffer& buf) {
     _addStateLine(buf);
     _addHeader(buf);
     _addContent(buf);
+}
+
+int HttpResponse::getFileLen() const {
+    return _file_stat.st_size;
+}
+
+void* HttpResponse::getFile() {
+    return _file;
 }
 
 // private methods
@@ -87,7 +104,27 @@ void HttpResponse::_addHeader(Buffer& buf) {
 }
 
 void HttpResponse::_addContent(Buffer& buf) {
-    
+    int fd = open((_src_dir + _path).c_str(), O_RDONLY);
+    if (fd < 0) {
+        LOG_ERROR("Open file failed!")
+        _errorContent(buf, "File NotFound!");
+        return;
+    }
+    LOG_DEBUG("mmap file path: %s", (_src_dir + _path).c_str())
+    // mmap将文件映射到内存提高访问速度，PROT_READ只读，MAP_PRIVATE建立私有写时拷贝映射
+    void* ret = mmap(0, _file_stat.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
+    // #define MAP_FAILED ((void*)-1)
+    // ((void*)-1) convert -1 to a pointer 0xFFFFFFFF
+    // why -1?因为mmap是映射到虚拟内存空间的，可能会映射到0x0
+    // 但永远不会映射到-1，-1永远是一个invalid返回值，所以用于表示错误 
+    if (ret == MAP_FAILED) {
+        LOG_ERROR("mmap failed!")
+        _errorContent(buf, "File NotFound!");
+        return;
+    }
+    _file = ret;
+    close(fd);
+    buf.append("Content-length: " + std::to_string(_file_stat.st_size) + "\r\n\r\n");
 }
 
 void HttpResponse::_errorHtml() {
@@ -110,4 +147,27 @@ std::string HttpResponse::_getFileType() const {
         return default_type;
     }
     return FILE_TYPE.at(type);
+}
+
+void HttpResponse::_errorContent(Buffer& buf, std::string message) {
+    std::string body;
+    std::string status = "Bad Request";
+    if (ERROR_CODE.find(_code) != ERROR_CODE.end()) {
+        status = ERROR_CODE.at(_code);
+    }
+    body += "<html><title>Error</title>";
+    body += "<body bgcolor=\"ffffff\">";
+    body += std::to_string(_code) + " : " + status + "\n";
+    body += "<p>" + message + "</p>";
+    body += "<hr><em>FutrueWebServer</em></body></html>";
+
+    buf.append("Content-length: " + std::to_string(body.size()) + "\r\n\r\n");
+    buf.append(body);
+}
+
+void HttpResponse::_unmapFile() {
+    if (_file != nullptr) {
+        munmap(_file, _file_stat.st_size);
+        _file = nullptr;
+    }
 }

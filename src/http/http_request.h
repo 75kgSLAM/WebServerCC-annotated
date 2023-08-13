@@ -17,6 +17,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 
 class HttpRequest {
 public:
@@ -45,6 +46,8 @@ public:
     bool parse(Buffer& buf);
 
     std::string getPath() const;
+
+    bool isKeepAlive() const;
 
 private:
     bool _parseRequestLine(const std::string& line);

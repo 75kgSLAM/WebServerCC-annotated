@@ -28,6 +28,9 @@ public:
     
     void makeResponse(Buffer& buf);
 
+    int getFileLen() const ;
+    void* getFile();
+
 private:
     void _addStateLine(Buffer& buf);
     void _addHeader(Buffer& buf);
@@ -35,13 +38,16 @@ private:
 
     void _errorHtml();
     std::string _getFileType() const;
+    void HttpResponse::_errorContent(Buffer& buf, std::string message);
+
+    void _unmapFile();
 
     int _code;
     bool _keep_alive;
     std::string _path;
     std::string _src_dir;
 
-    char* _file;
+    void* _file; // mmap file address
     struct stat _file_stat;
 
     static const std::unordered_map<std::string, std::string> FILE_TYPE;
