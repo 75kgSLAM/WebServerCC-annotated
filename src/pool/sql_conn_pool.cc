@@ -3,9 +3,9 @@
 
 #include "assert.h"
 
-SqlConnPool& SqlConnPool::instance(int size = 12) {
-    assert(size > 10);
-    static SqlConnPool scp(size);
+SqlConnPool& SqlConnPool::instance(int max_size = 12) {
+    assert(max_size > 10);
+    static SqlConnPool scp(max_size);
     return scp;
 }
 
@@ -73,6 +73,10 @@ void SqlConnPool::freeConn(MYSQL* conn) {
 int SqlConnPool::getFreeConnCount() {
     std::lock_guard<std::mutex> locker(_m);
     return _conn_que.size();
+}
+
+int SqlConnPool::getMaxSize() const {
+    return _MAX_CONN;
 }
 
 // private methods

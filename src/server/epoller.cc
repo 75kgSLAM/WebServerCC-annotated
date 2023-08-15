@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 Epoller::Epoller(int max_event = 1024)
+    // EPOLL_CLOEXEC 会在fork()后，即将exec()前，关闭子进程持有的所有父进程fd
     : _epoll_fd(epoll_create1(EPOLL_CLOEXEC)), _events(max_event) {}
 
 Epoller::~Epoller() {

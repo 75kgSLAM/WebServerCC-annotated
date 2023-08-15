@@ -20,10 +20,6 @@
 #include <arpa/inet.h> // sockaddr_in
 
 class HttpConn {
-    static bool _is_ET;
-    static const char* _src_dir;
-    static std::atomic<int> _user_count;
-
 public:
     HttpConn();
 
@@ -50,6 +46,10 @@ public:
     int getPort() const;
 
     std::string getHttpVersion() const;
+
+    static bool is_ET;
+    static const char* src_dir;
+    static std::atomic<int> user_count;
 
 private:
     ssize_t _readToBuf(int fd, int* err_state);

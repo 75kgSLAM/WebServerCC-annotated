@@ -23,7 +23,7 @@
 class ThreadPool {
 public:
     // 常规单参数构造explicit避免语义混乱
-    explicit ThreadPool(size_t thread_count = 8): _pool(std::make_shared<Pool>()) {
+    explicit ThreadPool(size_t thread_count = 8): _MAX_SIZE(thread_count), _pool(std::make_shared<Pool>()) {
         assert(thread_count > 0);
         for (size_t i = 0; i < thread_count; ++i) {
             // 创建一个线程，执行lambda指定的函数，然后detach
@@ -75,7 +75,14 @@ public:
         }
         _pool->cond.notify_one();
     }
+
+    int getMaxSize() const {
+        return _MAX_SIZE;
+    }
+
 private:
+    const int _MAX_SIZE;
+
     struct Pool {
         std::mutex m;
         std::condition_variable cond;

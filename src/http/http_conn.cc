@@ -13,7 +13,7 @@ HttpConn::~HttpConn() {
 
 void HttpConn::init(int socket_fd, const sockaddr_in& addr) {
     assert(socket_fd > 0); // why fd > 0 ？
-    _user_count++;
+    user_count++;
     _addr = addr;
     _fd = socket_fd;
     _read_buf.retrieveAll();
@@ -21,17 +21,17 @@ void HttpConn::init(int socket_fd, const sockaddr_in& addr) {
     _is_closed = false;
     _version = "1.1";
     LOG_INFO("New client connection [%d](%s:%d), current user count: %d",
-                _fd, getIP(), getPort(), _user_count)
+                _fd, getIP(), getPort(), user_count)
 }
 
 void HttpConn::close_conn() {
     // 如果没有init过，不需要释放？
     if (_is_closed == false) {
         _is_closed = true;
-        _user_count--;
+        user_count--;
         close(_fd);
         LOG_INFO("A client quit [%d](%s:%d), current user count: %d",
-                    _fd, getIP(), getPort(), _user_count)
+                    _fd, getIP(), getPort(), user_count)
     }
 }
 
@@ -43,7 +43,7 @@ ssize_t HttpConn::read(int* save_errno) {
         if (len <= 0) {
             break;
         }
-    } while (_is_ET);
+    } while (is_ET);
     return len;
 }
 
@@ -72,7 +72,7 @@ ssize_t HttpConn::write(int* save_errno) {
             _iov[0].iov_len -= l;
             _write_buf.retrieve(l);
         }
-    } while (_is_ET or getBytesToWrite() > 10240); // why 10240?
+    } while (is_ET or getBytesToWrite() > 10240); // why 10240?
     return len;
 }
 
@@ -88,7 +88,7 @@ bool HttpConn::process() {
         is_keep_alive = _request.isKeepAlive();
         code = 200;
     }
-    _response.init(_src_dir, _request.getPath(), is_keep_alive, code);
+    _response.init(src_dir, _request.getPath(), is_keep_alive, code);
     _response.makeResponse(_write_buf);
     
     // 状态栏和响应头

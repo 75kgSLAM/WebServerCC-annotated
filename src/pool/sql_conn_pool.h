@@ -36,7 +36,7 @@ typedef struct MysqlConnInitParam {
 class SqlConnPool {
 public:
     // 单例传参，用于初始化列初始化const成员
-    static SqlConnPool& instance(int size = 12);
+    static SqlConnPool& instance(int max_size = 12);
 
     void init(const MysqlParam& mp);
 
@@ -47,6 +47,8 @@ public:
     void freeConn(MYSQL* conn);
 
     int getFreeConnCount();
+
+    int getMaxSize() const;
 
 private:
     SqlConnPool(int size);
