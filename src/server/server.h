@@ -15,6 +15,7 @@
 #include "log/log.h"
 #include "pool/thread_pool.hpp"
 #include "pool/sql_conn_pool.h"
+#include "timer/timer.h"
 #include "epoller.h"
 
 #include <string>
@@ -46,8 +47,22 @@ public:
 private:
     bool _initSocket();
     void _initEventMode(int trigger_mode);
+    void _addClient(int fd, sockaddr_in addr);
+
+    void _dealListen();
+    void _dealRead(HttpConn* client);
+    void _dealWrite(HttpConn* client);
+
+    void _sendError(int fd, const char* info);
+    void _extendTime(HttpConn* client);
+    void _closeConn(HttpConn* client);
+
+    void _onRead(HttpConn* client);
+    void _onWrite(HttpConn* client);
+    void _onProcess(HttpConn* client);
 
     int _setFdNonblock(int fd);
+    
     static const int MAX_FD = 65536;
 
     int _port;
@@ -68,6 +83,7 @@ private:
     std::unique_ptr<ThreadPool> _thread_pool;
     std::unordered_map<int, HttpConn> _users;
     std::unique_ptr<Epoller> _epoller;
+    std::unique_ptr<Timer> _timer;
 };
 
 #endif // SERVER_H

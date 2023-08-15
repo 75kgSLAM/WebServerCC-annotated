@@ -13,7 +13,7 @@ public:
 
     bool addFd(int fd, uint32_t events);
 
-    bool movFd(int fd, uint32_t events);
+    bool modFd(int fd, uint32_t events);
 
     bool delFd(int fd);
 

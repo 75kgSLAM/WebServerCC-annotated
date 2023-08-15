@@ -8,11 +8,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <fcntl.h>
+#include <string.h>
 
 Server::Server(
     int port, int trigger_mode, int timeout_ms, bool opt_linger,
     int sql_port, const char* sql_username, const char* sql_password, const char* sql_dbname)
-    : _port(port), _opt_linger(opt_linger), _is_close(false), _src_dir(getcwd(nullptr, 256))
+    : _port(port), _timeout_ms(timeout_ms), _opt_linger(opt_linger), _is_close(false), _src_dir(getcwd(nullptr, 256))
     {
     Log::instance().init();
     assert(!_src_dir.empty());
@@ -50,17 +51,92 @@ Server::~Server() {
 }
 
 void Server::start() {
+    int time_ms = -1;
     if (!_is_close) {
         LOG_INFO("######## Server start! ########")
     }
     while (!_is_close) {
         if (_timeout_ms > 0) {
-            
+            time_ms = _timer->getNextTick();
+        }
+        int event_count = _epoller->wait(time_ms);
+        for (int i = 0; i < event_count; ++i) {
+            int fd = _epoller->getEventFd(i);
+            uint32_t events = _epoller->getEvents(i);
+            // 如果是监听socket，尝试建立连接
+            if (fd == _listen_fd) {
+                _dealListen();
+                continue;
+            }
+            // 如果既不是监听也不是连接socket，报错
+            if (_users.find(fd) == _users.end()) {
+                LOG_ERROR("Bad fd when dealing events!")
+                assert(_users.find(fd) != _users.end());
+            }
+            HttpConn* conn = &_users[fd];
+            // 连接socket，处理不同事件
+            // 客户端结束读 | 客户端结束读写 | 客户端错误
+            if (events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)) {
+                _closeConn(conn);
+                continue;
+            }
+            if (events & EPOLLIN) {
+                _dealRead(conn);
+                continue;   
+            }
+            if (events & EPOLLOUT) {
+                _dealWrite(conn);
+                continue;
+            }
+            LOG_ERROR("Unexpected event!")
         }
     }
 }
 
 //private methods
+void Server::_addClient(int fd, sockaddr_in addr) {
+    assert(fd > 0);
+    _users[fd].init(fd, addr);
+    if (_timeout_ms > 0) {
+        // bind绑定成员函数和对象以及函数参数，返回function对象供调用
+        _timer->add(fd, _timeout_ms, std::bind(&Server::_closeConn, this, &_users[fd]));
+    }
+    _epoller->addFd(fd, EPOLLIN | _conn_event);
+    _setFdNonblock(fd);
+    LOG_INFO("Add new client! fd:[%s]", _users[fd].getFd());
+}
+
+void Server::_dealListen() {
+    struct sockaddr_in addr;
+    socklen_t len = sizeof addr;
+    do {
+        int fd = accept(_listen_fd, (struct sockaddr*)&addr, &len);
+        if (fd < 0) {
+            LOG_ERROR("Accept connection failed!")
+            return;
+        }
+        if (HttpConn::user_count >= MAX_FD) {
+            _sendError(fd, "Server busy!");
+            close(fd);
+            LOG_WARN("Too many clients!")
+            return;
+        }
+        _addClient(fd, addr);
+    } while (_listen_event & EPOLLET);
+}
+
+void Server::_dealRead(HttpConn* client) {
+    assert(client != nullptr);
+    _extendTime(client);
+    _thread_pool->addTask(std::bind(&Server::_onRead, this, client));
+}
+
+void Server::_dealWrite(HttpConn* client) {
+    assert(client != nullptr);
+    _extendTime(client);
+    _thread_pool->addTask(std::bind(&Server::_onWrite, this, client));
+}
+
 bool Server::_initSocket() {
     struct sockaddr_in addr;
     if (_port > 65535 or _port < 1024) {
@@ -155,6 +231,64 @@ void Server::_initEventMode(int trigger_mode) {
         break;
     }
     HttpConn::is_ET = (_conn_event & EPOLLET);
+}
+
+void Server::_sendError(int fd, const char* info) {
+    assert(fd > 0);
+    int ret = send(fd, info, strlen(info), 0);
+    if (ret < 0) {
+        LOG_ERROR("Send error info to client failed! fd:[%s]", fd)
+    } 
+}
+
+void Server::_closeConn(HttpConn* client) {
+    assert(client != nullptr);
+    LOG_INFO("A client quit! fd:[%s]", client->getFd())
+    _epoller->delFd(client->getFd());
+    client->close_conn();
+}
+
+void Server::_onRead(HttpConn* client) {
+    assert(client != nullptr);
+    int read_errno = 0;
+    int ret = client->read(&read_errno);
+    // 这里表示读取结束但实际未到达结尾？
+    if (ret <= 0 and read_errno != EAGAIN) {
+        LOG_ERROR("Unknown read error!")
+        _closeConn(client);
+        return;
+    }
+    _onProcess(client);
+}
+
+void Server::_onWrite(HttpConn* client) {
+    assert(client != nullptr);
+    int write_errno = 0;
+    int ret = client->write(&write_errno);
+    if (client->getBytesToWrite() == 0) {
+        // 传输成功！
+        // 这里为什么要继续process？
+        if (client->isKeepAlive()) {
+            _onProcess(client);
+            return;
+        }
+    }
+    else if (ret < 0) {
+        if (write_errno == EAGAIN) {
+            _epoller->modFd(client->getFd(), _conn_event | EPOLLOUT);
+            return;
+        }
+    }
+    _closeConn(client);
+}
+
+void Server::_onProcess(HttpConn* client) {
+    assert(client != nullptr);
+    if (client->process() == true) {
+        _epoller->modFd(client->getFd(), _conn_event | EPOLLOUT);
+    } else {
+        _epoller->modFd(client->getFd(), _conn_event | EPOLLIN);
+    }
 }
 
 int Server::_setFdNonblock(int fd) {

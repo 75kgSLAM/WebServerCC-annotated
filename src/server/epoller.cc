@@ -22,7 +22,7 @@ bool Epoller::addFd(int fd, uint32_t events) {
     return 0 == epoll_ctl(_epoll_fd, EPOLL_CTL_ADD, fd, &st_ev);
 }
 
-bool Epoller::movFd(int fd, uint32_t events) {
+bool Epoller::modFd(int fd, uint32_t events) {
     if (fd < 0) {
         return false;
     }
@@ -40,7 +40,7 @@ bool Epoller::delFd(int fd) {
     return 0 == epoll_ctl(_epoll_fd, EPOLL_CTL_DEL, fd, &st_ev);
 }
 
-int Epoller::wait(int timeout_ms) {
+int Epoller::wait(int timeout_ms = -1) {
     // 注意_events是vector，首元素地址为&_events[0]
     return epoll_wait(_epoll_fd, &_events[0], static_cast<int>(_events.size()), timeout_ms);
 }

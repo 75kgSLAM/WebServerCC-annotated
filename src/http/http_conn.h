@@ -47,6 +47,8 @@ public:
 
     std::string getHttpVersion() const;
 
+    bool isKeepAlive() const;
+
     static bool is_ET;
     static const char* src_dir;
     static std::atomic<int> user_count;

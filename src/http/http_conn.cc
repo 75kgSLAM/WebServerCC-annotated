@@ -60,7 +60,7 @@ ssize_t HttpConn::write(int* save_errno) {
             break;
         }
         size_t l = static_cast<size_t>(len);
-        if (static_cast<size_t>(len) > _iov[0].iov_len) {
+        if (l > _iov[0].iov_len) {
             _iov[1].iov_base = static_cast<char*>(_iov[1].iov_base) + (l - _iov[0].iov_len);
             _iov[1].iov_len -= (l - _iov[0].iov_len);
             // 只有iov[0]是用_write_buf中提前生成的响应
@@ -126,13 +126,17 @@ std::string HttpConn::getHttpVersion() const {
     return _version;
 }
 
+bool HttpConn::isKeepAlive() const {
+    return _request.isKeepAlive();
+}
+
 // private methods
 ssize_t HttpConn::_readToBuf(int fd, int* err_state) {
     // why 65536?
     char buf[MAX_EXTRA_SPACE];
     // length should <= __IOV_MAX
     iovec iov[2];
-    const size_t writable = _read_buf.getReadableBytes();
+    size_t writable = _read_buf.getReadableBytes();
     // 使用readv分散读，保证数据全部读完
     // 默认总数据量不会超过buf容量+额外容量
     iov[0].iov_base = _read_buf.getWritePos();
@@ -140,7 +144,7 @@ ssize_t HttpConn::_readToBuf(int fd, int* err_state) {
     iov[1].iov_base = buf;
     iov[1].iov_len = sizeof buf;
 
-    const ssize_t len = readv(_fd, iov, 2);
+    ssize_t len = readv(_fd, iov, 2);
     if (len < 0) {
         *err_state = errno;
     } else if ((size_t)len <= writable) {
