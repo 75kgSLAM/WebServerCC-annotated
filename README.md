@@ -6,8 +6,9 @@ Learning a Linux WebServer using C++11 with own annotations.
 
 《Effective C++》 ——Scott Meyers 著 侯捷 译
 
+
 特别感谢@qingguoyi, @markparticle项目的启发
 
-项目地址：https://github.com/qinguoyi/TinyWebServer
-
-         https://github.com/markparticle/WebServer
+项目地址：
+https://github.com/qinguoyi/TinyWebServer
+https://github.com/markparticle/WebServer
